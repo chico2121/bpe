@@ -1,0 +1,20 @@
+I"Ð<h2>Method</h2>
+
+<ol>
+  <li>
+    <p>First, we separate the motion attribute from the skeleton and view by body part.
+<br /><br />
+<img src="./img/method.png" alt="method" />
+<br /><br /></p>
+  </li>
+  <li>
+    <p>Then, simliarity is calculated only with motion embedding.
+<br /><br />
+<img src="./img/similarity.png" alt="similarity" />
+<br /><br /></p>
+  </li>
+</ol>
+
+<h4>See <a href="https://openreview.net/forum?id=OavApYHSNF">paper</a> for more details.</h4>
+
+:ET
