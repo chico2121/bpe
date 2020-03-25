@@ -1,0 +1,10 @@
+torch~=1.4.0
+numpy~=1.18.1
+scipy
+tqdm
+opencv-python
+imageio
+imageio-ffmpeg
+tslearn
+more_itertools
+matplotlib
