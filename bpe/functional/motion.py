@@ -5,6 +5,7 @@ import numpy as np
 import torch
 from scipy.ndimage import gaussian_filter1d
 
+
 def trans_motion2d_rc(motion2d, flip, visibility=False):
     # subtract centers to local coordinates
     if visibility:
@@ -19,16 +20,16 @@ def trans_motion2d_rc(motion2d, flip, visibility=False):
         rl_motion_proj = motion2d[[9, 10, 11], :-1, :] - rl_center
         ll_motion_proj = motion2d[[12, 13, 14], :-1, :] - ll_center
         torso_motion_proj = motion2d[[0, 1, 2, 5, 9, 12], :-1, :] - torso_center
-        
+
         ra_flag = motion2d[[2, 3, 4], 2, np.newaxis, :]
         la_flag = motion2d[[5, 6, 7], 2, np.newaxis, :]
         rl_flag = motion2d[[9, 10, 11], 2, np.newaxis, :]
         ll_flag = motion2d[[12, 13, 14], 2, np.newaxis, :]
         torso_flag = motion2d[[0, 1, 2, 5, 9, 12], 2, np.newaxis, :]
-        
+
         # final flag, np.zeros((1, 1, 60)) is for velocity position: it will be detached before input the model.
         flags = np.r_[ra_flag, la_flag, rl_flag, ll_flag, torso_flag, np.zeros((1, 1, motion2d.shape[-1]))]
-    
+
     else:
         ra_center = motion2d[2, :, :]
         la_center = motion2d[5, :, :]
@@ -41,9 +42,9 @@ def trans_motion2d_rc(motion2d, flip, visibility=False):
         rl_motion_proj = motion2d[[9, 10, 11], :, :] - rl_center
         ll_motion_proj = motion2d[[12, 13, 14], :, :] - ll_center
         torso_motion_proj = motion2d[[0, 1, 2, 5, 9, 12], :, :] - torso_center
-        
+
         flags = None
-        
+
     # adding velocity
     velocity = np.c_[np.zeros((2, 1)), torso_center[:, 1:] - torso_center[:, :-1]].reshape(1, 2, -1)
 
@@ -57,7 +58,7 @@ def trans_motion2d_rc(motion2d, flip, visibility=False):
     else:
         motion_proj = np.r_[ra_motion_proj, la_motion_proj, rl_motion_proj, ll_motion_proj, torso_motion_proj, velocity]
 
-    return motion_proj, flags # return shape: (19, 2, 64)
+    return motion_proj, flags  # return shape: (19, 2, 64)
 
 
 def trans_motion2d_rc_all_joints(motion2d, flip, visibility=False):
@@ -75,12 +76,12 @@ def trans_motion2d_rc_all_joints(motion2d, flip, visibility=False):
         rl_motion_proj = motion2d[:, :-1, :] - rl_center
         ll_motion_proj = motion2d[:, :-1, :] - ll_center
         torso_motion_proj = motion2d[:, :-1, :] - torso_center
-        
+
         motion_flag = motion2d[:, 2, np.newaxis, :]
-        
+
         # final flag, np.zeros((1, 1, 60)) is for velocity position: it will be detached before input the model.
         flags = np.concatenate((np.concatenate([motion_flag] * 5), np.zeros((1, 1, motion2d.shape[-1]))), axis=0)
-    
+
     else:
         ra_center = motion2d[2, :, :]
         la_center = motion2d[5, :, :]
@@ -94,9 +95,9 @@ def trans_motion2d_rc_all_joints(motion2d, flip, visibility=False):
         rl_motion_proj = motion2d - rl_center
         ll_motion_proj = motion2d - ll_center
         torso_motion_proj = motion2d - torso_center
-        
+
         flags = None
-    
+
     if flip:
         ra_motion_proj[:, 0, :] = -ra_motion_proj[:, 0, :]
         la_motion_proj[:, 0, :] = -la_motion_proj[:, 0, :]
@@ -244,14 +245,12 @@ def openpose2motion(json_dir, scale=1.0, smooth=True, max_frame=None):
     return motion
 
 
-def cocopose2motion(num_joints, json_dir, scale=1.0, smooth=True, max_frame=None, visibility=False, mean_height=None, limit=-1):
+def annotations2motion(num_joints, annotations, scale=1.0, smooth=True, visibility=False, mean_height=None, limit=-1, no_wrap=False):
     motion = []
-    with open(json_dir) as f:
-        jointDict = json.load(f)
-        # case for cv-api directly using
-        annotations = jointDict['annotations'] if 'annotations' in jointDict else jointDict['result']['annotations']
-
-        for annotation in annotations[:max(limit, len(annotations))]:
+    for annotation in annotations[:max(limit, len(annotations))]:
+        if no_wrap:
+            keypoint = annotation
+        else:
             if len(annotation['objects']) == 0:
                 if visibility:
                     motion.append(np.zeros((num_joints, 3)))
@@ -260,54 +259,54 @@ def cocopose2motion(num_joints, json_dir, scale=1.0, smooth=True, max_frame=None
                 continue
 
             keypoint = annotation['objects'][0]['keypoints']
-            if len(keypoint) == 51:
-                coco = np.array(keypoint).reshape((-1, 3))
-            else:
-                coco = np.array(keypoint).reshape((-1, 4))
-            if visibility:
-                coco = coco[:, :3]
-            else:
-                coco = coco[:, :2]
+        if len(keypoint) == 51:
+            coco = np.array(keypoint).reshape((-1, 3))
+        else:
+            coco = np.array(keypoint).reshape((-1, 4))
+        if visibility:
+            coco = coco[:, :3]
+        else:
+            coco = coco[:, :2]
 
-            nose = coco[0]
-            right_shoulder = coco[6]
-            right_elbow = coco[8]
-            right_wrist = coco[10]
-            left_shoulder = coco[5]
-            left_elbow = coco[7]
-            left_wrist = coco[9]
-            right_hip = coco[12]
-            right_knee = coco[14]
-            right_ankle = coco[16]
-            left_hip = coco[11]
-            left_knee = coco[13]
-            left_ankle = coco[15]
-            neck = (right_shoulder + left_shoulder) / 2
-            mid_hip = (right_hip + left_hip) / 2
-            
-            joint = np.array([nose,
-                              neck,
-                              right_shoulder,
-                              right_elbow,
-                              right_wrist,
-                              left_shoulder,
-                              left_elbow,
-                              left_wrist,
-                              mid_hip,
-                              right_hip,
-                              right_knee,
-                              right_ankle,
-                              left_hip,
-                              left_knee,
-                              left_ankle,
-                              ])
-            
-            joint = joint.reshape((-1, 3)) if visibility else joint.reshape((-1, 2))
+        nose = coco[0]
+        right_shoulder = coco[6]
+        right_elbow = coco[8]
+        right_wrist = coco[10]
+        left_shoulder = coco[5]
+        left_elbow = coco[7]
+        left_wrist = coco[9]
+        right_hip = coco[12]
+        right_knee = coco[14]
+        right_ankle = coco[16]
+        left_hip = coco[11]
+        left_knee = coco[13]
+        left_ankle = coco[15]
+        neck = (right_shoulder + left_shoulder) / 2
+        mid_hip = (right_hip + left_hip) / 2
 
-            if not visibility and len(motion) > 0:
-                joint[np.where(joint == 0)] = motion[-1][np.where(joint == 0)]
-            motion.append(joint)
-    
+        joint = np.array([nose,
+                          neck,
+                          right_shoulder,
+                          right_elbow,
+                          right_wrist,
+                          left_shoulder,
+                          left_elbow,
+                          left_wrist,
+                          mid_hip,
+                          right_hip,
+                          right_knee,
+                          right_ankle,
+                          left_hip,
+                          left_knee,
+                          left_ankle,
+                          ])
+
+        joint = joint.reshape((-1, 3)) if visibility else joint.reshape((-1, 2))
+
+        if not visibility and len(motion) > 0:
+            joint[np.where(joint == 0)] = motion[-1][np.where(joint == 0)]
+        motion.append(joint)
+
     if not visibility:
         for i in range(len(motion) - 1, 0, -1):
             motion[i - 1][np.where(motion[i - 1] == 0)] = motion[i][np.where(motion[i - 1] == 0)]
@@ -321,12 +320,12 @@ def cocopose2motion(num_joints, json_dir, scale=1.0, smooth=True, max_frame=None
                 joint_motion_visible = np.where(joint_motion[2] != 0)
                 smooth_motion[j_idx][0, joint_motion_visible] = gaussian_filter1d(joint_motion[0, joint_motion_visible], sigma=2, axis=-1)
                 smooth_motion[j_idx][1, joint_motion_visible] = gaussian_filter1d(joint_motion[1, joint_motion_visible], sigma=2, axis=-1)
-                smooth_motion[j_idx][2] = joint_motion[2] 
-                
+                smooth_motion[j_idx][2] = joint_motion[2]
+
             motion = smooth_motion
         else:
             motion = gaussian_filter1d(motion, sigma=2, axis=-1)
-            
+
     if mean_height is not None:
         avg_ankle_y = (motion[11, 1, :] + motion[14, 1, :]) / 2
         nose_y = motion[0, 1, :]
@@ -334,9 +333,22 @@ def cocopose2motion(num_joints, json_dir, scale=1.0, smooth=True, max_frame=None
         height_pixel_frame = height_pixel_frame[np.where(height_pixel_frame != 0)]
         height_pixel = np.percentile(height_pixel_frame, 90)
         motion = motion * mean_height / height_pixel
-    else:  
+    else:
         motion = motion * scale
     return motion
+
+
+def json2annotations(json_dir):
+    with open(json_dir) as f:
+        jointDict = json.load(f)
+    # case for cv-api directly using
+    return jointDict['annotations'] if 'annotations' in jointDict else jointDict['result']['annotations']
+
+
+def cocopose2motion(num_joints, json_dir, scale=1.0, smooth=True, visibility=False, mean_height=None, limit=-1):
+    annotations = json2annotations(json_dir)
+
+    return annotations2motion(num_joints, annotations, scale, smooth, visibility, mean_height, limit)
 
 
 def ntupose2motion(json_dir, scale=1.0, smooth=True, max_frame=None):

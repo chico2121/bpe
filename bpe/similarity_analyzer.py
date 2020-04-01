@@ -94,7 +94,6 @@ class SimilarityAnalyzer:
 
     def get_similarity_score(self, seq1_features, seq2_features, similarity_window_size):
 
-        min_length = min(len(seq1_features), len(seq2_features))
         similarity_score_per_window = []
 
         for subseq1_features, subseq2_features in zip(*(self._chunked_iterable(seq1_features, similarity_window_size),

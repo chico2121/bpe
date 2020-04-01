@@ -488,9 +488,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--name', type=str, default="sim_test")
     parser.add_argument('--data_dir', default="/root/bpe-dev/unity/datasets/", help="path to dataset dir")
-    parser.add_argument('--model_path', type=str,
-                        default="/root/bpe-dev/train_log/exp_part_embedding_train_unit64_norm_unit128/model/",
-                        help="filepath for trained model weights")
+    parser.add_argument('--model_path', type=str, required=True, help="filepath for trained model weights")
     parser.add_argument('--ntu_dir', default="/data/project/rw/NTU-RGB", help="processed NTU pose dir")
 
     parser.add_argument('-g', '--gpu_ids', type=int, default=1, required=False)
