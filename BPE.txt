@@ -1,6 +1,6 @@
 @inproceedings{park2020bpe,
-    author={Park, Jonghyuk and Cho, Sukhyun and Kim, Dongwoo and Bailo, Oleksandr and Park, Heewoong and Park, Jonghun and Hong, Sanghoon},
+    author={Park, Jonghyuk and Cho, Sukhyun and Kim, Dongwoo and Bailo, Oleksandr and Park, Heewoong and Hong, Sanghoon and Park, Jonghun},
     title={A Body Part Embedding Model with Datasets for Measuring 2D Human Motion Similarity},
-    booktitle = {European Conference on Computer Vision (ECCV)},
-    year = {2020}
+    booktitle = {IEEE Access},
+    year = {2021}
 }
