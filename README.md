@@ -2,7 +2,7 @@
 
 PyTorch implementation of [A Body Part Embedding Model with Datasets for Measuring 2D Human Motion Similarity](https://ieeexplore.ieee.org/document/9366759), IEEE Access.
 
-We propose a learning framework with datasets to generate embeddings for measuring motion similarity for each human body part.
+We propose a learning framework with datasets to generate embeddings for measuring motion similarity for each human body part. See [project page](https://chico2121.github.io/bpe/) for the details.
 
 | ![](./resources/171414_1_171404_1_640_640-0.9_1.gif)  | ![](./resources/171435_1_171399_0_789_795-0.32_0.gif)  | ![](./resources/171481_1_171444_1_448_448-0.5_1.gif)  | ![](./resources/171484_0_171473_0_832_832-0.75_1.gif)  | ![](./resources/171432_4_171426_1_417_217-0.1_0.gif)  | ![](./resources/171404_0_171458_0_544_544-0.68_1.gif)  |
 |---|---|---|---|---|---|
