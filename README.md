@@ -14,8 +14,8 @@ We propose a learning framework with datasets to generate embeddings for measuri
 - Clone this repo
 
   ```bash
-  git clone https://github.com/dade-ai/bpe-dev.git
-  cd bpe-dev
+  git clone https://github.com/chico2121/bpe.git
+  cd bpe
   ```
 
 - Install dependencies
