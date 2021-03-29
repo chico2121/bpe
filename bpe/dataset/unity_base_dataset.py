@@ -63,9 +63,7 @@ class _UnityDatasetBase(Dataset):
             self.input_frame_length = config.length_of_frames_train
             self.additional_view_aug = True
         else:
-            # self.character_names = ['BlueSuitFree01', 'Zombie']
-            self.character_names = ['Izzy', 'SkelMesh_Bodyguard_01', 'rp_alison_rigged_001_yup_t',
-                                    'rp_eric_rigged_001_yup_t', 'BlueSuitFree01', 'Zombie']
+            self.character_names = ['CharA', 'CharB', 'CharC', 'CharD', 'CharE', 'CharF']
             self.aug = False
             self.joint_noise_level = 0.0
             self.input_frame_length = config.length_of_frames_test
