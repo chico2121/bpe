@@ -23,6 +23,12 @@ We propose a learning framework with datasets to generate embeddings for measuri
   ```bash
   pip install -r requirements.txt
   ```
+  
+- Working directory is assumed to be bpe (or bpe-master). Make sure to export PYTHONPATH:
+
+  ```bash
+  export PYTHONPATH=$PYTHONPATH:/absolute-path-to/[bpe or bpe-master]
+  ```
 
 ### Data preparation
 
