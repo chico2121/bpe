@@ -30,6 +30,7 @@ class _UnityDatasetBase(Dataset):
     def __init__(self, phase, config):
         super(_UnityDatasetBase, self).__init__()
 
+        assert os.path.exists(config.data_dir), f"{config.data_dir} does not exist"
         print('Loading {} dataset'.format(phase))
 
         assert phase in ['train', 'test']
@@ -52,7 +53,6 @@ class _UnityDatasetBase(Dataset):
         if self.invisibility_augmentation:
             self.body_parts_invis = config.body_parts_invis
 
-        # FIXME : decide character_names
         if phase == 'train':
             self.character_names = ['FuseFemaleA', 'FuseFemaleB', 'FuseFemaleC',
                                     'FuseFemaleD', 'FuseFemaleE', 'FuseMaleBruteA', 'FuseMaleBruteB',
@@ -63,7 +63,7 @@ class _UnityDatasetBase(Dataset):
             self.input_frame_length = config.length_of_frames_train
             self.additional_view_aug = True
         else:
-            self.character_names = ['CharA', 'CharB', 'CharC', 'CharD', 'CharE', 'CharF']
+            self.character_names = ['CharB', 'CharC', 'CharD', 'CharE', 'CharF']
             self.aug = False
             self.joint_noise_level = 0.0
             self.input_frame_length = config.length_of_frames_test
@@ -92,11 +92,11 @@ class _UnityDatasetBase(Dataset):
 
     def _build_motion_path_items(self, use_cache=True, save_cache=True, num_workers=12):
         print('\t Building motion path items')
-        glob_path = os.path.join(self.data_root, self.character_names[0], '*/*/*/motions_32_real/*.npy')
+        glob_path = os.path.join(self.data_root, self.character_names[0], '*/*/*/motions/*.npy')
 
         BPE_CACHE = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), "training_cache")
         os.makedirs(BPE_CACHE, exist_ok=True)
-        MOTION_CACHE_PATH = os.path.join(BPE_CACHE, "bpe_cache%s" % '_'.join(glob_path.split("/")[-7:]))
+        MOTION_CACHE_PATH = os.path.join(BPE_CACHE, "bpe_cache_%s" % '_'.join(glob_path.split("/")[-7:]))
         MOTION_CACHE_PATH_MOTION_NAMES = MOTION_CACHE_PATH + "_motion_names.pickle"
         MOTION_CACHE_PATH_VARIATION_NAMES = MOTION_CACHE_PATH + "_variation_names.pickle"
         MOTION_CACHE_PATH_VAR_NEG_NAMES = MOTION_CACHE_PATH + "_var_neg_names.pickle"
@@ -112,22 +112,33 @@ class _UnityDatasetBase(Dataset):
         else:
             print('\t [Cache Not Found] motion path items')
             items = glob.glob(glob_path)
+
             motion_names_split = [x.split('/')[-5:] for x in items]
             motion_names = ['/'.join(x) for x in motion_names_split]
             variations_by_motion = {
                 motion_name: [float(var.split("_")[1]) for var in motion_name.split("/")[2].split("|")]
                 for motion_name in tqdm(motion_names)
             }
+            assert len(motion_names) != 0, f"Dataset seems to be incomplete or corrupted. " \
+                                           f"Possible issue: https://github.com/chico2121/SARA_Dataset/issues/2"
 
             pool = Pool(processes=num_workers)
             variation_and_negative_names_list = pool.starmap(_get_variation_and_negative_names,
                                                              tqdm(zip(motion_names, repeat(motion_names),
                                                                       repeat(motion_names_split)),
                                                                   total=len(motion_names)))
-            variation_and_negative_names = {
-                motion_name: v_n_item
-                for motion_name, v_n_item in zip(motion_names, variation_and_negative_names_list)
-            }
+
+            # disregard samples with no variations
+            motion_names_filtered = []
+            variations_by_motion_filtered = {}
+            variation_and_negative_names = {}
+            for motion_name, v_n_item in zip(motion_names, variation_and_negative_names_list):
+                if len(v_n_item[0]) != 0:
+                    motion_names_filtered.append(motion_name)
+                    variation_and_negative_names[motion_name] = v_n_item
+                    variations_by_motion_filtered[motion_name] = variations_by_motion[motion_name]
+            motion_names = motion_names_filtered
+            variations_by_motion = variations_by_motion_filtered
 
             if save_cache:
                 with open(MOTION_CACHE_PATH_MOTION_NAMES, "wb") as fw:
@@ -475,10 +486,18 @@ class _UnityDatasetBase(Dataset):
 
     def preprocess_inputs_util(self, motions_list, character_names, view_names):
         # get paths to appropriate files
-        path_to_items = [[self.build_item(motion, character) for motion in motions_list]
-                         for character in character_names]
+        paths_to_items = []
+        for character in character_names:
+            path_to_items = []
+            for motion in motions_list:
+                path = self.build_item(motion, character)
+                if os.path.exists(path):
+                    path_to_items.append(path)
+                else:
+                    print(f"{path} does not exist. Dataset seems to be incomplete or corrupted")
+            paths_to_items.append(path_to_items)
 
-        return self.preprocess_inputs_quad(path_to_items, view_names, self.preprocessing_rc)
+        return self.preprocess_inputs_quad(paths_to_items, view_names, self.preprocessing_rc)
 
     def preprocess_inputs_quad(self, path_to_items, view_names, preproc_fun):
         # get augmentations

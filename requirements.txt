@@ -8,3 +8,5 @@ imageio-ffmpeg
 tslearn
 more_itertools
 matplotlib
+tensorboard
+pandas
