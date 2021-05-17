@@ -41,7 +41,7 @@ def main():
     parser.add_argument('-g', '--gpu_ids', type=str, default=0, required=False, help="specify gpu ids")
     parser.add_argument('--dataset', choices=["unity", "mixamo"], default="unity",
                         help="whether to use one decoder per one body part")
-    parser.add_argument('--data_dir', default="", required=True, help="path to dataset dir")
+    parser.add_argument('--data_dir', default="", required=True, help="path to `SARA_released` dataset dir")
 
     # Experiments argumen ts
     parser.add_argument('--use_footvel_loss', action='store_true', help="use footvel loss")

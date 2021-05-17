@@ -23,6 +23,12 @@ We propose a learning framework with datasets to generate embeddings for measuri
   ```bash
   pip install -r requirements.txt
   ```
+  
+- Working directory is assumed to be bpe (or bpe-master). Make sure to export PYTHONPATH:
+
+  ```bash
+  export PYTHONPATH=$PYTHONPATH:/absolute-path-to/[bpe or bpe-master]
+  ```
 
 ### Data preparation
 
@@ -37,7 +43,7 @@ We propose a learning framework with datasets to generate embeddings for measuri
   ```
   python train_bpe.py
     -g 0
-    --data_dir <path_to>/bpe-datasets
+    --data_dir <path_to>/SARA_released
     --use_footvel_loss
     --logdir <path_to_dir>
   ```
@@ -56,9 +62,9 @@ We propose a learning framework with datasets to generate embeddings for measuri
 
   ```
   python python bin/ntu_similarity.py
-    --data_dir <path to data dir>
-    --model_path <path to model checkpoint>
-    --ntu_dir <path to pose data of ntu>
+    --data_dir <path to>/SARA_released
+    --model_path <path to directory with model checkpoints (e.g. exp-bpe/model/*.pth) >
+    --ntu_dir <path to pose data of ntu (i.e. NTU_motion_sim_annotations/refined_skeleton) >
   ```
 
   Execute `python bin/ntu_similarity.py --help` for more options.

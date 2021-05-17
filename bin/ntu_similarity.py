@@ -188,7 +188,7 @@ def load_model(config, path):
 
 
 def load_ckpt_from_path(model_path: str) -> OrderedDict:
-    assert os.path.exists(model_path)
+    assert os.path.exists(model_path), f"{model_path} does not exist"
     print('Loading model from {}'.format(model_path))
     state_dict = torch.load(model_path)
 
@@ -252,7 +252,7 @@ def start_ntu_similarity(epoch_path, args, all_data, scale,
         candidate = all_data['sample2'][row]
 
         query_action_idx = query[-3:]
-        query_json_path = os.path.join(args.ntu_dir, query_action_idx, query + '_rgb.json')
+        query_json_path = os.path.join(args.ntu_dir, query_action_idx, query + '.json')
         query_motion = cocopose2motion(config.unique_nr_joints, query_json_path, scale=scale,
                                        visibility=config.invisibility_augmentation, mean_height=mean_height)
 
@@ -270,7 +270,7 @@ def start_ntu_similarity(epoch_path, args, all_data, scale,
 
         candidate_action_idx = candidate[-3:]
         candidate_json_path = os.path.join(args.ntu_dir, candidate_action_idx,
-                                           candidate + '_rgb.json')
+                                           candidate + '.json')
 
         candidate_motion = cocopose2motion(config.unique_nr_joints, candidate_json_path, scale=scale,
                                            visibility=config.invisibility_augmentation, mean_height=mean_height)

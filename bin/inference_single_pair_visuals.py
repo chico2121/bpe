@@ -13,15 +13,11 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--name', type=str, default="sim_test", help="task name")
     parser.add_argument('--data_dir', default="", required=True, help="path to dataset dir")
-    parser.add_argument('--model_path', type=str,
-                        default="/data/project/rw/models/bpe/20200302_imlab_best/model_best.pth.tar",
-                        help="filepath for trained model weights")
-    parser.add_argument('--video1', type=str, help="video1 mp4 path", default=None)
-    parser.add_argument('--video2', type=str, help="video2 mp4 path", default=None)
-    parser.add_argument('-v1', '--vid1_json_dir', type=str, help="video1's coco json directory",
-                        default='./unity/COCO_processed/20191107_Combat_6CH_400fps_Processed_2019-11-07_21-08-27_coco/0.00:Zombie:Combat5@Arm Height,1@Target,1@Distance,1:Cam_MM_Normal.json')
-    parser.add_argument('-v2', '--vid2_json_dir', type=str, help="video2's coco json directory",
-                        default='./unity/COCO_processed/20191107_Combat_6CH_400fps_Processed_2019-11-07_21-08-27_coco/0.00:Zombie:Combat5@Arm Height,-0.5@Target,-0.5@Distance,-0.5:Cam_MM_Normal.json')
+    parser.add_argument('--model_path', type=str, required=True, help="filepath for trained model weights")
+    parser.add_argument('--video1', type=str, required=True, help="video1 mp4 path", default=None)
+    parser.add_argument('--video2', type=str, required=True, help="video2 mp4 path", default=None)
+    parser.add_argument('-v1', '--vid1_json_dir', type=str, required=True, help="video1's coco annotation json")
+    parser.add_argument('-v2', '--vid2_json_dir', type=str, required=True, help="video2's coco annotation json")
     parser.add_argument('-h1', '--img1_height', type=int, help="video1's height", default=480)
     parser.add_argument('-w1', '--img1_width', type=int, help="video1's width", default=854)
     parser.add_argument('-h2', '--img2_height', type=int, help="video2's height", default=480)
@@ -53,8 +49,8 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
     # load meanpose and stdpose
-    mean_pose_bpe = np.load(os.path.join(args.data_dir, 'meanpose_rc_with_view.npy'))
-    std_pose_bpe = np.load(os.path.join(args.data_dir, 'stdpose_rc_with_view.npy'))
+    mean_pose_bpe = np.load(os.path.join(args.data_dir, 'meanpose_rc_with_view_unit64.npy'))
+    std_pose_bpe = np.load(os.path.join(args.data_dir, 'stdpose_rc_with_view_unit64.npy'))
 
     if not os.path.exists(args.out_path):
         os.makedirs(args.out_path)
