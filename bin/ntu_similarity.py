@@ -188,16 +188,16 @@ def load_model(config, path):
 
 
 def load_ckpt_from_path(model_path: str) -> OrderedDict:
-    assert os.path.exists(model_path), f"{model_path} does not exist"
+    assert os.path.exists(model_path)
     print('Loading model from {}'.format(model_path))
     state_dict = torch.load(model_path)
 
     return state_dict
 
 
-def print_amt_corr(epochs, all_data_list):
-    for epoch, target_data in zip(epochs, all_data_list):
-        print(f"EPOCH{epoch:02d}", end="\t")
+def print_amt_corr(models, all_data_list):
+    for model, target_data in zip(models, all_data_list):
+        print(f'MODEL {model.split("/")[-1]}', end="\t")
         print(calc_amt_corr(target_data))
 
 
@@ -255,7 +255,7 @@ def start_ntu_similarity(epoch_path, args, all_data, scale,
         query_json_path = os.path.join(args.ntu_dir, query_action_idx, query + '.json')
         query_motion = cocopose2motion(config.unique_nr_joints, query_json_path, scale=scale,
                                        visibility=config.invisibility_augmentation, mean_height=mean_height)
-
+        
         if query in list(loaded_items.keys()):
             query_tensor = loaded_items[query]
             flipped_query = loaded_items[query + '_flipped']
@@ -271,7 +271,6 @@ def start_ntu_similarity(epoch_path, args, all_data, scale,
         candidate_action_idx = candidate[-3:]
         candidate_json_path = os.path.join(args.ntu_dir, candidate_action_idx,
                                            candidate + '.json')
-
         candidate_motion = cocopose2motion(config.unique_nr_joints, candidate_json_path, scale=scale,
                                            visibility=config.invisibility_augmentation, mean_height=mean_height)
 
@@ -332,34 +331,28 @@ def main():
     # expereiments settings
     img_size = [480, 854]  # height, width
 
-    save_csv_dir = "amt_real_final/200207"
-    save_csv_name_base = "AMT_for_corr_train_unit64_norm_unit128_cosine_loss_global_dtw_part_mpnet_"
+    save_csv_dir = "results"
+    save_csv_name_base = "AMT_for_corr_"
     if not os.path.exists(os.path.join(ntu_dir, save_csv_dir)):
         os.makedirs(os.path.join(ntu_dir, save_csv_dir))
 
-    epochs = list(range(1, 70+1))
-    # epochs = [1, 5]
 
     ######################################################################################################
     h, w, scale = pad_to_height(img_size[0], 1080, 1920)
 
     all_data, mean_pose_bpe, std_pose_bpe, mean_height = basic_configuration()
 
-    epochs_path = []
-    for epoch in epochs:
-        modelname = 'model_epoch' + str(epoch) + '.pth'
-        epoch_path = os.path.join(args.model_path, modelname)
-        epochs_path.append(epoch_path)
+    models_path = [args.model_path]
 
     if args.use_mp:
         with mp.Pool(min(15, mp.cpu_count() - 1)) as p:
             nets_similarities = [p.apply_async(start_ntu_similarity, args=(epoch_path, args, all_data, scale,
                                                                            mean_pose_bpe, std_pose_bpe, mean_height))
-                                 for epoch_path in epochs_path]
+                                 for epoch_path in models_path]
             nets_similarities = [result.get() for result in nets_similarities]
     else:
         nets_similarities = []
-        for epoch_path in epochs_path:
+        for epoch_path in models_path:
             net_similarity = start_ntu_similarity(epoch_path, args, all_data, scale,
                                                   mean_pose_bpe, std_pose_bpe, mean_height)
             nets_similarities.append(net_similarity)
@@ -367,8 +360,8 @@ def main():
     if args.print_amt_corr:
         all_data_epoch_order = []
 
-    for net_idx in range(len(epochs)):
-        csv_name = save_csv_name_base + str(epochs_path[net_idx]).split("/")[-3] + "_e" + str(epochs[net_idx]) + ".csv"
+    for net_idx in range(len(models_path)):
+        csv_name = save_csv_name_base + str(models_path[net_idx]).split("/")[-3] + "_" + str(models_path[net_idx].split("/")[-1]) + ".csv"
         out_csv = os.path.join(ntu_dir, save_csv_dir, csv_name)
 
         similarity = np.asarray(nets_similarities[net_idx])
@@ -387,7 +380,7 @@ def main():
             all_data_epoch_order.append(all_data_copy)
 
     if args.print_amt_corr:
-        print_amt_corr(epochs, all_data_epoch_order)
+        print_amt_corr(models_path, all_data_epoch_order)
 
 
 class WorkerManager:
@@ -487,11 +480,11 @@ def start_worker():
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--name', type=str, default="sim_test")
-    parser.add_argument('--data_dir', default="/root/bpe-dev/unity/datasets/", help="path to dataset dir")
+    parser.add_argument('--data_dir', default="./bpe-datasets/SARA_released/", help="path to dataset dir")
     parser.add_argument('--model_path', type=str, required=True, help="filepath for trained model weights")
-    parser.add_argument('--ntu_dir', default="/data/project/rw/NTU-RGB", help="processed NTU pose dir")
+    parser.add_argument('--ntu_dir', default="./bpe-datasets/NTU_joints", help="processed NTU pose dir")
 
-    parser.add_argument('-g', '--gpu_ids', type=int, default=1, required=False)
+    parser.add_argument('-g', '--gpu_ids', type=int, default=2, required=False)
     parser.add_argument('--similarity_distance_metric', choices=["cosine", "l2"], default="cosine")
 
     parser.add_argument('--use_flipped_motion', action='store_true', default=True,
@@ -504,7 +497,7 @@ if __name__ == '__main__':
     # DEBUG - early evaluation
     parser.add_argument('--limit', type=int, default=-1, help="only use partial to get similarity")
     parser.add_argument('--print_amt_corr', action='store_true', default=True)
-    parser.add_argument('--use_mp', action='store_true', default=True)
+    parser.add_argument('--use_mp', action='store_true', default=False)
 
     # realtime worker mode
     parser.add_argument('--worker', action='store_true', default=False)
